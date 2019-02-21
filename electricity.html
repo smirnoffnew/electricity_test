@@ -63,7 +63,12 @@
                     this.incomingConnections = {};
                 }
 
-                connect(eventName, currentStatus){ debugger;
+                join(house){
+                    this.isElectrified ?
+                        house.connect(this.name, this.isElectrified) : this.connect(house.name, house.isElectrified);
+                }
+
+                connect(eventName, currentStatus){
                     this.incomingConnections[eventName] = {};
 
                     const listener = this
@@ -76,34 +81,39 @@
                     this.notifyConsumers();
                 }
 
-                updateIncomingConnectionsStatus(eventName, status){ debugger;
+                updateIncomingConnectionsStatus(eventName, status){
                     this.incomingConnections[eventName]['status'] = status;
                     this.synchronizeElectrifiedWithIncomingConnectionsStatus();
+                    this.notifyConsumers();
                 }
 
-                addIncomingConnectionsListListeners(eventName, listener){ debugger;
+
+                addIncomingConnectionsListListeners(eventName, listener){
                     this.incomingConnections[eventName]['listener'] = listener;
                 }
 
-                synchronizeElectrifiedWithIncomingConnectionsStatus(){ debugger;
-                    this.incomingConnections;
+
+                synchronizeElectrifiedWithIncomingConnectionsStatus(){
                     this.isElectrified = Object
                         .keys(this.incomingConnections)
                         .filter(eventKey => this.incomingConnections[eventKey].status)
                         .length > 0;
                 }
 
-                notifyConsumers(){ debugger;
+
+                notifyConsumers(){
                     this.CustomEventEmitter.emit(this.name, this.isElectrified);
                 }
 
-                disconnect(eventName){ debugger;
+
+                disconnect(eventName){
                     this.removeIncomingConnectionsListListeners(eventName);
                     this.synchronizeElectrifiedWithIncomingConnectionsStatus();
                     this.notifyConsumers();
                 }
 
-                removeIncomingConnectionsListListeners(eventName){ debugger;
+
+                removeIncomingConnectionsListListeners(eventName){
                     this.incomingConnections[eventName]['listener'].call(null);
                     delete this.incomingConnections[eventName];
                 }
@@ -126,10 +136,12 @@
                     this.notifyConsumers();
                 }
 
+
                 repairPowerPlant(){
                     this.isAlive = true;
                     this.notifyConsumers();
                 }
+
 
                 notifyConsumers(){
                     this.CustomEventEmitter.emit(this.name, this.isAlive);
@@ -158,7 +170,7 @@
 
 
                 connectHouseholdToHousehold(household1, household2) {
-                    household1.connect(household2.name, household2.isElectrified || household1.isElectrified);
+                    household1.join(household2);
                 }
 
 
@@ -358,15 +370,14 @@
                 console.log('household1', household1);
                 console.log('household2', household2);
 
-                debugger;
 
-                console.log(world.householdHasEletricity(household1), true);
-                console.log(world.householdHasEletricity(household2), true);
+                console.log(world.householdHasEletricity(household1), 'true');
+                console.log(world.householdHasEletricity(household2), 'true');
 
                 world.killPowerPlant(powerPlant);
 
-                console.log(world.householdHasEletricity(household1), false);
-                console.log(world.householdHasEletricity(household2), false);
+                console.log(world.householdHasEletricity(household1), 'false');
+                console.log(world.householdHasEletricity(household2), 'false');
             }
 
             //Power Plant -> Household -> Household -> Household
@@ -382,27 +393,27 @@
                 world.connectHouseholdToHousehold(household1, household2);
                 world.connectHouseholdToHousehold(household2, household3);
 
-                console.log(world.householdHasEletricity(household1), true);
-                console.log(world.householdHasEletricity(household2), true);
-                console.log(world.householdHasEletricity(household3), true);
+                console.log(world.householdHasEletricity(household1), 'true');
+                console.log(world.householdHasEletricity(household2), 'true');
+                console.log(world.householdHasEletricity(household3), 'true');
 
                 world.killPowerPlant(powerPlant);
 
-                console.log(world.householdHasEletricity(household1), false);
-                console.log(world.householdHasEletricity(household2), false);
-                console.log(world.householdHasEletricity(household3), false);
+                console.log(world.householdHasEletricity(household1), 'false');
+                console.log(world.householdHasEletricity(household2), 'false');
+                console.log(world.householdHasEletricity(household3), 'false');
 
                 world.repairPowerPlant(powerPlant);
 
-                console.log(world.householdHasEletricity(household1), true);
-                console.log(world.householdHasEletricity(household2), true);
-                console.log(world.householdHasEletricity(household3), true);
+                console.log(world.householdHasEletricity(household1), 'true');
+                console.log(world.householdHasEletricity(household2), 'true');
+                console.log(world.householdHasEletricity(household3), 'true');
 
                 world.disconnectHouseholdFromPowerPlant(household1, powerPlant);
 
-                console.log(world.householdHasEletricity(household1), false);
-                console.log(world.householdHasEletricity(household2), false);
-                console.log(world.householdHasEletricity(household3), false);
+                console.log(world.householdHasEletricity(household1), 'false');
+                console.log(world.householdHasEletricity(household2), 'false');
+                console.log(world.householdHasEletricity(household3), 'false');
             }
 
             //2 Households + 2 Power Plants
@@ -418,28 +429,24 @@
                 world.connectHouseholdToPowerPlant(household1, powerPlant1);
                 world.connectHouseholdToPowerPlant(household2, powerPlant2);
 
-                console.log(world.householdHasEletricity(household1), true);
-                console.log(world.householdHasEletricity(household2), true);
+                console.log(world.householdHasEletricity(household1), 'true');
+                console.log(world.householdHasEletricity(household2), 'true');
 
                 world.killPowerPlant(powerPlant1);
 
-                console.log(world.householdHasEletricity(household1), false);
-                console.log(world.householdHasEletricity(household2), true);
+                console.log(world.householdHasEletricity(household1), 'false');
+                console.log(world.householdHasEletricity(household2), 'true');
 
                 world.connectHouseholdToHousehold(household1, household2);
 
-                console.log(world.householdHasEletricity(household1), true);
-                console.log(world.householdHasEletricity(household2), true);
+                console.log(world.householdHasEletricity(household1), 'true');
+                console.log(world.householdHasEletricity(household2), 'true');
 
                 world.disconnectHouseholdFromPowerPlant(household2, powerPlant2);
 
-                console.log(world.householdHasEletricity(household1), false);
-                console.log(world.householdHasEletricity(household2), false);
+                console.log(world.householdHasEletricity(household1), 'false');
+                console.log(world.householdHasEletricity(household2), 'false');
             }
-
-
-
-
 
         </script>
     </body>
