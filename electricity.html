@@ -5,40 +5,53 @@
         <title>Electricity</title>
     </head>
     <body>
+        <div>
+            <h3>First block</h3>
+            <button onclick="test1()">test1</button>
+            <button onclick="test2()">test2</button>
+            <button onclick="test3()">test3</button>
+            <button onclick="test4()">test4</button>
+            <button onclick="test5()">test5</button>
+            <button onclick="test6()">test6</button>
+            <button onclick="test7()">test7</button>
+            <button onclick="test8()">test8</button>
+            <button onclick="test9()">test9</button>
+        </div>
+
+        <div>
+            <h3>Second block</h3>
+            <button onclick="test_1()">test_1</button>
+            <button onclick="test_2()">test_2</button>
+            <button onclick="test_3()">test_3</button>
+        </div>
+
         <script>
             class EventEmitter {
                 constructor() {
                     this.events = {};
-                }
+                };
+
                 on(event, listener) {
-                    if (typeof this.events[event] !== 'object') {
-                        this.events[event] = [];
-                    }
+                   (typeof this.events[event] !== 'object') &&  (this.events[event] = []);
                     this.events[event].push(listener);
                     return () => this.removeListener(event, listener);
-                }
+                };
+
                 removeListener(event, listener) {
                     if (typeof this.events[event] === 'object') {
-                        const idx = this.events[event].indexOf(listener);
-                        if (idx > -1) {
-                            this.events[event].splice(idx, 1);
-                        }
+                        const isExist = this.events[event].indexOf(listener);
+                        (isExist > -1) && (this.events[event].splice(isExist, 1));
                     }
-                }
+                };
+
                 emit(event, ...args) {
                     if (typeof this.events[event] === 'object') {
-                        this.events[event].forEach(listener => {
-                            listener && listener.apply(this, args)
-                        });
+                        this.events[event].forEach(listener => listener.apply(this, args));
                     }
-                }
-                once(event, listener) {
-                    const remove = this.on(event, (...args) => {
-                        remove();
-                        listener.apply(this, args);
-                    });
-                }
-            };
+                };
+
+            }
+
 
             class Household {
                 constructor(name, CustomEventEmitter) {
@@ -50,46 +63,51 @@
                     this.incomingConnections = {};
                 }
 
-                connect(eventName, currentStatus){
+                connect(eventName, currentStatus){ debugger;
                     this.incomingConnections[eventName] = {};
-                    const listener = this.CustomEventEmitter.on(eventName,this.updateIncomingConnectionsStatus(eventName, currentStatus));
+
+                    const listener = this
+                        .CustomEventEmitter
+                        .on(eventName, emitedData => this.updateIncomingConnectionsStatus(eventName, emitedData));
+
                     this.addIncomingConnectionsListListeners(eventName, listener);
+                    this.updateIncomingConnectionsStatus(eventName, currentStatus);
                     this.synchronizeElectrifiedWithIncomingConnectionsStatus();
                     this.notifyConsumers();
-                    console.log(this.name, 'connected to', eventName,  this.incomingConnections);
                 }
 
-                disconnect(eventName){
-                    this.removeIncomingConnectionsListListeners(eventName);
-                    this.synchronizeElectrifiedWithIncomingConnectionsStatus();
-                    this.notifyConsumers();
-                    console.log(this.name, 'disconnect from', eventName, this.incomingConnections);
-                }
-
-                notifyConsumers(){
-                    this.CustomEventEmitter.emit(this.name, this.isElectrified);
-                }
-
-                updateIncomingConnectionsStatus(eventName, status){ 
+                updateIncomingConnectionsStatus(eventName, status){ debugger;
                     this.incomingConnections[eventName]['status'] = status;
+                    this.synchronizeElectrifiedWithIncomingConnectionsStatus();
                 }
 
-                addIncomingConnectionsListListeners(eventName, listener){
+                addIncomingConnectionsListListeners(eventName, listener){ debugger;
                     this.incomingConnections[eventName]['listener'] = listener;
                 }
 
-                removeIncomingConnectionsListListeners(eventName){
-                    this.incomingConnections[eventName]['listener']();
+                synchronizeElectrifiedWithIncomingConnectionsStatus(){ debugger;
+                    this.incomingConnections;
+                    this.isElectrified = Object
+                        .keys(this.incomingConnections)
+                        .filter(eventKey => this.incomingConnections[eventKey].status)
+                        .length > 0;
+                }
+
+                notifyConsumers(){ debugger;
+                    this.CustomEventEmitter.emit(this.name, this.isElectrified);
+                }
+
+                disconnect(eventName){ debugger;
+                    this.removeIncomingConnectionsListListeners(eventName);
+                    this.synchronizeElectrifiedWithIncomingConnectionsStatus();
+                    this.notifyConsumers();
+                }
+
+                removeIncomingConnectionsListListeners(eventName){ debugger;
+                    this.incomingConnections[eventName]['listener'].call(null);
                     delete this.incomingConnections[eventName];
                 }
 
-                synchronizeElectrifiedWithIncomingConnectionsStatus(){
-                    let allConnections = [];
-                    for (const connectionKey of Object.keys(this.incomingConnections)) {
-                        allConnections.push(this.incomingConnections[connectionKey].status);
-                    }
-                    this.isElectrified = allConnections.filter(item => item).length > 0;
-                }
             }
 
 
@@ -103,7 +121,7 @@
                     this.isAlive = true;
                 }
 
-                killPowerPlant(){ 
+                killPowerPlant(){
                     this.isAlive = false;
                     this.notifyConsumers();
                 }
@@ -113,13 +131,10 @@
                     this.notifyConsumers();
                 }
 
-                notifyConsumers(){ 
+                notifyConsumers(){
                     this.CustomEventEmitter.emit(this.name, this.isAlive);
                 }
             }
-
-
-
 
 
             class World {
@@ -143,7 +158,7 @@
 
 
                 connectHouseholdToHousehold(household1, household2) {
-                    household1.disconnect(household2.name, household2.isAlive);
+                    household1.connect(household2.name, household2.isElectrified || household1.isElectrified);
                 }
 
 
@@ -158,7 +173,7 @@
 
 
                 repairPowerPlant(powerPlant) {
-                    throw new Error('Not Implemented');
+                    powerPlant.repairPowerPlant();
                 }
 
 
@@ -167,7 +182,38 @@
                 }
             }
 
-            function test(){
+            //Households + Power Plants
+            function test1(){
+                const world = new World();
+                const household = world.createHousehold();
+                console.log(world.householdHasEletricity(household), 'false');
+            }
+
+            //Household has electricity if connected to a Power Plant
+            function test2(){
+                const world = new World();
+                const household = world.createHousehold();
+                const powerPlant = world.createPowerPlant();
+
+                world.connectHouseholdToPowerPlant(household, powerPlant);
+                console.log(world.householdHasEletricity(household), 'true');
+            }
+
+            //Household won't have Electricity after disconnecting from the only Power Plant
+            function test3(){
+                const world = new World();
+                const household = world.createHousehold();
+                const powerPlant = world.createPowerPlant();
+
+                world.connectHouseholdToPowerPlant(household, powerPlant);
+                console.log(world.householdHasEletricity(household), 'true');
+
+                world.disconnectHouseholdFromPowerPlant(household, powerPlant);
+                console.log(world.householdHasEletricity(household), 'false');
+            }
+
+            //Household will have Electricity as long as there's at least 1 alive Power Plant connected
+            function test4(){
                 const world = new World();
                 const household = world.createHousehold();
 
@@ -179,20 +225,221 @@
                 world.connectHouseholdToPowerPlant(household, powerPlant2);
                 world.connectHouseholdToPowerPlant(household, powerPlant3);
 
-                console.log(world.householdHasEletricity(household), '1true' );
-                debugger;
+                console.log(world.householdHasEletricity(household), 'true');
 
                 world.disconnectHouseholdFromPowerPlant(household, powerPlant1);
-                console.log(world.householdHasEletricity(household), '2true' );
+                console.log(world.householdHasEletricity(household), 'true');
 
                 world.killPowerPlant(powerPlant2);
-                console.log(world.householdHasEletricity(household), '3true');
-                
+                console.log(world.householdHasEletricity(household), 'true');
+
                 world.disconnectHouseholdFromPowerPlant(household, powerPlant3);
-                console.log(world.householdHasEletricity(household), '4false' );
+                console.log(world.householdHasEletricity(household), 'false');
+
             }
 
-            test();
+            //Household won't have Electricity if the only Power Plant dies
+            function test5(){
+                const world = new World();
+                const household = world.createHousehold();
+                const powerPlant = world.createPowerPlant();
+
+                world.connectHouseholdToPowerPlant(household, powerPlant);
+
+                console.log(world.householdHasEletricity(household), 'true');
+
+                world.killPowerPlant(powerPlant);
+                console.log(world.householdHasEletricity(household), 'false');
+            }
+
+            //PowerPlant can be repaired
+            function test6(){
+                const world = new World();
+                const household = world.createHousehold();
+                const powerPlant = world.createPowerPlant();
+
+                world.connectHouseholdToPowerPlant(household, powerPlant);
+
+                console.log(world.householdHasEletricity(household), 'true');
+
+                world.killPowerPlant(powerPlant);
+                console.log(world.householdHasEletricity(household), 'false');
+
+                world.repairPowerPlant(powerPlant);
+                console.log(world.householdHasEletricity(household), 'true');
+
+                world.killPowerPlant(powerPlant);
+                console.log(world.householdHasEletricity(household), 'false');
+
+                world.repairPowerPlant(powerPlant);
+                console.log(world.householdHasEletricity(household), 'true');
+            }
+
+            //Few Households + few Power Plants, case 1
+            function test7(){
+                const world = new World();
+
+                const household1 = world.createHousehold();
+                const household2 = world.createHousehold();
+
+                const powerPlant1 = world.createPowerPlant();
+                const powerPlant2 = world.createPowerPlant();
+
+                world.connectHouseholdToPowerPlant(household1, powerPlant1);
+                world.connectHouseholdToPowerPlant(household1, powerPlant2);
+                world.connectHouseholdToPowerPlant(household2, powerPlant2);
+
+                console.log(world.householdHasEletricity(household1), 'true');
+                console.log(world.householdHasEletricity(household2), 'true');
+
+                world.killPowerPlant(powerPlant2);
+                console.log(world.householdHasEletricity(household1), 'true');
+                console.log(world.householdHasEletricity(household2), 'false');
+
+                world.killPowerPlant(powerPlant1);
+                console.log(world.householdHasEletricity(household1), 'false');
+                console.log(world.householdHasEletricity(household2), 'false');
+            }
+
+            //Few Households + few Power Plants, case 2
+            function test8(){
+                const world = new World();
+
+                const household1 = world.createHousehold();
+                const household2 = world.createHousehold();
+
+                const powerPlant1 = world.createPowerPlant();
+                const powerPlant2 = world.createPowerPlant();
+
+                world.connectHouseholdToPowerPlant(household1, powerPlant1);
+                world.connectHouseholdToPowerPlant(household1, powerPlant2);
+                world.connectHouseholdToPowerPlant(household2, powerPlant2);
+
+                world.disconnectHouseholdFromPowerPlant(household2, powerPlant2);
+
+                console.log(world.householdHasEletricity(household1), 'true');
+                console.log(world.householdHasEletricity(household2), 'false');
+
+                world.killPowerPlant(powerPlant2);
+                console.log(world.householdHasEletricity(household1), 'true');
+                console.log(world.householdHasEletricity(household2), 'false');
+
+                world.killPowerPlant(powerPlant1);
+                console.log(world.householdHasEletricity(household1), 'false');
+                console.log(world.householdHasEletricity(household2), 'false');
+            }
+
+            //Household + Power Plant, case 1
+            function test9(){
+                const world = new World();
+
+                const household = world.createHousehold();
+                const powerPlant = world.createPowerPlant();
+
+                console.log(world.householdHasEletricity(household), 'false');
+                world.killPowerPlant(powerPlant);
+
+                world.connectHouseholdToPowerPlant(household, powerPlant);
+
+                console.log(world.householdHasEletricity(household), 'false');
+            }
+
+            //Households + 1 Power Plant
+            function test_1(){
+                const world = new World();
+
+                const household1 = world.createHousehold();
+                const household2 = world.createHousehold();
+                const powerPlant = world.createPowerPlant();
+
+                world.connectHouseholdToPowerPlant(household1, powerPlant);
+                world.connectHouseholdToHousehold(household1, household2);
+
+                console.log('household1', household1);
+                console.log('household2', household2);
+
+                debugger;
+
+                console.log(world.householdHasEletricity(household1), true);
+                console.log(world.householdHasEletricity(household2), true);
+
+                world.killPowerPlant(powerPlant);
+
+                console.log(world.householdHasEletricity(household1), false);
+                console.log(world.householdHasEletricity(household2), false);
+            }
+
+            //Power Plant -> Household -> Household -> Household
+            function test_2(){
+                const world = new World();
+
+                const household1 = world.createHousehold();
+                const household2 = world.createHousehold();
+                const household3 = world.createHousehold();
+                const powerPlant = world.createPowerPlant();
+
+                world.connectHouseholdToPowerPlant(household1, powerPlant);
+                world.connectHouseholdToHousehold(household1, household2);
+                world.connectHouseholdToHousehold(household2, household3);
+
+                console.log(world.householdHasEletricity(household1), true);
+                console.log(world.householdHasEletricity(household2), true);
+                console.log(world.householdHasEletricity(household3), true);
+
+                world.killPowerPlant(powerPlant);
+
+                console.log(world.householdHasEletricity(household1), false);
+                console.log(world.householdHasEletricity(household2), false);
+                console.log(world.householdHasEletricity(household3), false);
+
+                world.repairPowerPlant(powerPlant);
+
+                console.log(world.householdHasEletricity(household1), true);
+                console.log(world.householdHasEletricity(household2), true);
+                console.log(world.householdHasEletricity(household3), true);
+
+                world.disconnectHouseholdFromPowerPlant(household1, powerPlant);
+
+                console.log(world.householdHasEletricity(household1), false);
+                console.log(world.householdHasEletricity(household2), false);
+                console.log(world.householdHasEletricity(household3), false);
+            }
+
+            //2 Households + 2 Power Plants
+            function test_3(){
+                const world = new World();
+
+                const household1 = world.createHousehold();
+                const household2 = world.createHousehold();
+
+                const powerPlant1 = world.createPowerPlant();
+                const powerPlant2 = world.createPowerPlant();
+
+                world.connectHouseholdToPowerPlant(household1, powerPlant1);
+                world.connectHouseholdToPowerPlant(household2, powerPlant2);
+
+                console.log(world.householdHasEletricity(household1), true);
+                console.log(world.householdHasEletricity(household2), true);
+
+                world.killPowerPlant(powerPlant1);
+
+                console.log(world.householdHasEletricity(household1), false);
+                console.log(world.householdHasEletricity(household2), true);
+
+                world.connectHouseholdToHousehold(household1, household2);
+
+                console.log(world.householdHasEletricity(household1), true);
+                console.log(world.householdHasEletricity(household2), true);
+
+                world.disconnectHouseholdFromPowerPlant(household2, powerPlant2);
+
+                console.log(world.householdHasEletricity(household1), false);
+                console.log(world.householdHasEletricity(household2), false);
+            }
+
+
+
+
 
         </script>
     </body>
