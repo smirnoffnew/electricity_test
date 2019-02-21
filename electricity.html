@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Electricity</title>
+    </head>
+    <body>
+        <script>
+            class EventEmitter {
+                constructor() {
+                    this.events = {};
+                }
+                on(event, listener) {
+                    if (typeof this.events[event] !== 'object') {
+                        this.events[event] = [];
+                    }
+                    this.events[event].push(listener);
+                    return () => this.removeListener(event, listener);
+                }
+                removeListener(event, listener) {
+                    if (typeof this.events[event] === 'object') {
+                        const idx = this.events[event].indexOf(listener);
+                        if (idx > -1) {
+                            this.events[event].splice(idx, 1);
+                        }
+                    }
+                }
+                emit(event, ...args) {
+                    if (typeof this.events[event] === 'object') {
+                        this.events[event].forEach(listener => {
+                            listener && listener.apply(this, args)
+                        });
+                    }
+                }
+                once(event, listener) {
+                    const remove = this.on(event, (...args) => {
+                        remove();
+                        listener.apply(this, args);
+                    });
+                }
+            };
+
+            class Household {
+                constructor(name, CustomEventEmitter) {
+                    this.CustomEventEmitter = CustomEventEmitter;
+                    this.min = 1;
+                    this.max = 9999;
+                    this.name = `${name}_${Math.floor(Math.random() * (this.max - this.min) + this.min)}`;
+                    this.isElectrified = false;
+                    this.incomingConnections = {};
+                }
+
+                connect(eventName, currentStatus){
+                    this.incomingConnections[eventName] = {};
+                    const listener = this.CustomEventEmitter.on(eventName,this.updateIncomingConnectionsStatus(eventName, currentStatus));
+                    this.addIncomingConnectionsListListeners(eventName, listener);
+                    this.synchronizeElectrifiedWithIncomingConnectionsStatus();
+                    this.notifyConsumers();
+                    console.log(this.name, 'connected to', eventName,  this.incomingConnections);
+                }
+
+                disconnect(eventName){
+                    this.removeIncomingConnectionsListListeners(eventName);
+                    this.synchronizeElectrifiedWithIncomingConnectionsStatus();
+                    this.notifyConsumers();
+                    console.log(this.name, 'disconnect from', eventName, this.incomingConnections);
+                }
+
+                notifyConsumers(){
+                    this.CustomEventEmitter.emit(this.name, this.isElectrified);
+                }
+
+                updateIncomingConnectionsStatus(eventName, status){ 
+                    this.incomingConnections[eventName]['status'] = status;
+                }
+
+                addIncomingConnectionsListListeners(eventName, listener){
+                    this.incomingConnections[eventName]['listener'] = listener;
+                }
+
+                removeIncomingConnectionsListListeners(eventName){
+                    this.incomingConnections[eventName]['listener']();
+                    delete this.incomingConnections[eventName];
+                }
+
+                synchronizeElectrifiedWithIncomingConnectionsStatus(){
+                    let allConnections = [];
+                    for (const connectionKey of Object.keys(this.incomingConnections)) {
+                        allConnections.push(this.incomingConnections[connectionKey].status);
+                    }
+                    this.isElectrified = allConnections.filter(item => item).length > 0;
+                }
+            }
+
+
+
+            class PowerPlant {
+                constructor(name, CustomEventEmitter) {
+                    this.CustomEventEmitter = CustomEventEmitter;
+                    this.min = 1;
+                    this.max = 9999;
+                    this.name = `${name}_${Math.floor(Math.random() * (this.max - this.min) + this.min)}`;
+                    this.isAlive = true;
+                }
+
+                killPowerPlant(){ 
+                    this.isAlive = false;
+                    this.notifyConsumers();
+                }
+
+                repairPowerPlant(){
+                    this.isAlive = true;
+                    this.notifyConsumers();
+                }
+
+                notifyConsumers(){ 
+                    this.CustomEventEmitter.emit(this.name, this.isAlive);
+                }
+            }
+
+
+
+
+
+            class World {
+                constructor() {
+                    this.customEventEmitter = new EventEmitter();
+                }
+
+                createPowerPlant() {
+                    return new PowerPlant('powerPlant', this.customEventEmitter);
+                }
+
+
+                createHousehold() {
+                    return new Household('household', this.customEventEmitter);
+                }
+
+
+                connectHouseholdToPowerPlant(household, powerPlant) {
+                    household.connect(powerPlant.name, powerPlant.isAlive);
+                }
+
+
+                connectHouseholdToHousehold(household1, household2) {
+                    household1.disconnect(household2.name, household2.isAlive);
+                }
+
+
+                disconnectHouseholdFromPowerPlant(household, powerPlant) {
+                    household.disconnect(powerPlant.name);
+                }
+
+
+                killPowerPlant(powerPlant) {
+                    powerPlant.killPowerPlant();
+                }
+
+
+                repairPowerPlant(powerPlant) {
+                    throw new Error('Not Implemented');
+                }
+
+
+                householdHasEletricity(household) {
+                    return household.isElectrified;
+                }
+            }
+
+            function test(){
+                const world = new World();
+                const household = world.createHousehold();
+
+                const powerPlant1 = world.createPowerPlant();
+                const powerPlant2 = world.createPowerPlant();
+                const powerPlant3 = world.createPowerPlant();
+
+                world.connectHouseholdToPowerPlant(household, powerPlant1);
+                world.connectHouseholdToPowerPlant(household, powerPlant2);
+                world.connectHouseholdToPowerPlant(household, powerPlant3);
+
+                console.log(world.householdHasEletricity(household), '1true' );
+                debugger;
+
+                world.disconnectHouseholdFromPowerPlant(household, powerPlant1);
+                console.log(world.householdHasEletricity(household), '2true' );
+
+                world.killPowerPlant(powerPlant2);
+                console.log(world.householdHasEletricity(household), '3true');
+                
+                world.disconnectHouseholdFromPowerPlant(household, powerPlant3);
+                console.log(world.householdHasEletricity(household), '4false' );
+            }
+
+            test();
+
+        </script>
+    </body>
+</html>
